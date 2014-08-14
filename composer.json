@@ -1,9 +1,9 @@
 {
-    "name": "hatframework/resources/files",
+    "name": "hatframework/hat-resource-files",
     "type": "library",
     "description": "",
     "keywords": [],
-    "homepage": "https://github.com/hat-framework/resources/files",
+    "homepage": "https://github.com/hat-framework/hat-resource-files",
     "license": "MIT",
     "authors": [
         {
