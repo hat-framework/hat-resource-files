@@ -19,7 +19,7 @@
         "hatframework/hatclasses":"dev-master"
     },
     "autoload": {
-        "psr-0": {
+        "psr-4": {
             "resource\files\\": "src/"
         }
     }
