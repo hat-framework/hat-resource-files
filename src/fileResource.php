@@ -53,6 +53,7 @@ class fileResource extends \classes\Interfaces\resource{
     public function savefile($filename, $conteudo, $chmod = 0755){
         $dir = dirname($filename);
         getTrueDir($dir);
+        getTrueDir($filename);
         if(!is_dir($dir) && !$this->createDir($dir)) return false;
         if(file_put_contents($filename, $conteudo) === false){
             $this->setErrorMessage("Não foi possível criar o arquivo ($filename) ");
