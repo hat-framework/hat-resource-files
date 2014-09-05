@@ -43,6 +43,7 @@ class zipResource extends zipClass{
             getTrueDir($diretorio);
             $dirname = str_replace($this->diretorio.DS, "", $diretorio);
             if(trim($dirname) != ""){
+                getTrueDir($dirname);
                 $status = $this->zip->addEmptyDir($dirname);
                 if($status !== TRUE){
                     $this->setErrorMessage("Erro ao criar o diretório $diretorio <br/>Motivo: " .$this->ZipStatusString($status));
@@ -62,10 +63,38 @@ class zipResource extends zipClass{
         foreach($files as $file){
             if(trim($file) === ""){continue;}
             $relativeFile = (trim($dirname) !== "")?$dirname.DS.$file:$file;
-            if($this->zip->addFile($dir.DS.$file,$relativeFile) === false){
+            $absFile      = $dir.DS.$file;
+            getTrueDir($absFile);
+            getTrueDir($relativeFile);
+            if($this->zip->addFile($absFile,$relativeFile) === false){
                 $this->err[] = "Erro ao zipar o arquivo ".$dir.DS.$file;
             }
         }
+        return true;
+    }
+    
+    public function downloadZipDir($diretorio, $dropDir = false){
+        $filename = "$diretorio.zip";
+        if(false === $this->compactar($diretorio)){return false;}
+        if(false === $this->getFile($filename)){return false;}
+        $bool = $this->LoadResource('files/file', 'fobj')->dropFile($filename);
+        if(true === $dropDir){$bool = $bool and $this->LoadResource('files/dir', 'dobj')->remove($diretorio); }
+        $this->setMessages($this->fobj->getMessages());
+        $this->setMessages($this->dobj->getMessages());
+        return $bool;
+    }
+    
+    private function getFile($filename){
+        if(!file_exists($filename)){
+            $this->setErrorMessage("O arquivo '$filename' que você está tentando acessar não existe mais");
+            return false;
+        }
+        // Enviando para o cliente fazer download
+        header('Content-Type: application/zip;');
+        header("Content-Transfer-Encoding: binary");
+        header("Content-Length: ".filesize($filename).";");
+        header("Content-Disposition: attachment; filename='".  basename($filename)."';");
+        readfile("$filename");
         return true;
     }
 }
