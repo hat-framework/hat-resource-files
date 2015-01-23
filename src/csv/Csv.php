@@ -57,9 +57,14 @@ class Csv extends classes\Classes\Object{
         if (!strlen($this->filename)) { 
             throw new Exception("There is no filename parameter."); 
         } 
-        if (!$this->csvH = @fopen($this->filename, "r+")) { 
+        
+        if(!$fc = iconv('windows-1250', 'utf-8', file_get_contents($this->filename))){
             throw new Exception("Cannot find/open '". $this->filename ."'."); 
-        } 
+        }
+        $handle=fopen("php://memory", "rw"); 
+        fwrite($handle, $fc); 
+        fseek($handle, 0); 
+        $this->csvH = $handle;
         return true; 
     } 
     
@@ -207,6 +212,4 @@ class Csv extends classes\Classes\Object{
         return true;
     }
     
-} 
-
-?>
+}
