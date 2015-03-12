@@ -70,20 +70,17 @@ class fileResource extends \classes\Interfaces\resource{
     public function append($filename, $conteudo){
         getTrueDir($filename);
         if(!file_exists($filename)){
-            die('jajaja');
             $this->setErrorMessage("Arquivo $filename não existe!");
             return false;
         }
         
         $fp = fopen($filename, 'a+');
         if($fp === FALSE){
-            die("dooo");
             $this->setErrorMessage("Não foi possível abrir o arquivo $filename");
             return false;
         }
         
         if(fwrite ($fp, $conteudo) === FALSE){
-            die("oinc");
             $this->setErrorMessage("Não foi possível escrever no arquivo $filename");
             return false;
         }
@@ -298,80 +295,133 @@ class fileResource extends \classes\Interfaces\resource{
                 $step++;
             } 
             return round($filesize,2).' '.$prefix[$step];
-        }else return 'NaN';
+        }
+        return 'NaN';
+    }
+    
+    public function getMimeType(&$file){
+        // Use fileinfo if available
+        $magic = trim(getenv('MAGIC' ));
+        if (extension_loaded('fileinfo') && $magic !== false && ($finfo = finfo_open(FILEINFO_MIME, $magic)) !== false){
+                if (($type = finfo_file($finfo, $file)) !== false){
+                        // Remove the charset and grab the last content-type
+                        $type = explode(' ', str_replace('; charset=', ';charset=', $type));
+                        $type = array_pop($type);
+                        $type = explode(';', $type);
+                        $type = trim(array_shift($type));
+                }
+                finfo_close($finfo);
+                if ($type !== false && strlen($type) > 0) {return $type;}
+        }
+        
+        $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        $type = isset(self::$extensions[$ext]) ? self::$extensions[$ext] : trim(mime_content_type($file));
+
+        return ($type !== false && strlen($type) > 0) ? $type : 'application/octet-stream';
+    }
+    
+    public function getFileExtension($filename){
+        $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        if(isset(self::$extensions[$ext])){return $ext;}
+        
+        $mime = $this->getMimeType($filename);
+        $out  = $this->getExtension($mime, true);
+        if(!is_array($out)){
+            return ($out === false || trim($out) === "")?'txt':$out;
+        }
+        return end($out);
     }
     
     /**
      * Retorna a extensão do arquivo de acordo com o mime type informado. Retorna false caso não encontre a extensão
      * do mime tipo informado.
      * @param string $mime_type
-     * @return string/boolean
+     * @param bool $all return all extensions for some mime type or just one if false
+     * @return mixed string/boolean/array
      */
-     public function getExtension($mime_type) {
-        $array = $this->extensions();
+     public function getExtension($mime_type, $all = false) {
+        $array = self::$extensions;
+        $out   = array();
         foreach ($array as $ext => $mime) {
-            if ($mime == $mime_type)
-                return $ext;
+            if ($mime != $mime_type){continue;}
+            if(!$all){return $ext;}
+            $out[] = $ext;
         }
-        return false;
+        return (empty($out))? false:$out;
     }
 
-    private function extensions(){
-         return array(
-            'txt' => 'text/plain',
-            'htm' => 'text/html',
-            'html' => 'text/html',
-            'php' => 'text/html',
-            'css' => 'text/css',
-            'js' => 'application/javascript',
-            'json' => 'application/json',
-            'xml' => 'application/xml',
-            'swf' => 'application/x-shockwave-flash',
-            'flv' => 'video/x-flv',
+    private static $extensions = array(
+        //texto
+        'asc'  => 'text/plain',
+        'ogg'  => 'application/ogg',
+        'txt'  => 'text/plain',
+        'xml'  => 'application/xml',
+        'xsl'  => 'application/xsl+xml',
+        
+        //programacao
+        'css'  => 'text/css',
+        'htm'  => 'text/html',
+        'html' => 'text/html',
+        'js'   => 'application/javascript',
+        'json' => 'application/json',
+        'php'  => 'text/x-php',
+        'swf'  => 'application/x-shockwave-flash',
+        
+        // images
+        'bmp'  => 'image/bmp',
+        'gif'  => 'image/gif',
+        'ico'  => 'image/x-icon',
+        'jpe'  => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'jpg'  => 'image/jpeg',
+        'png'  => 'image/png',
+        'svg'  => 'image/svg+xml',
+        'svgz' => 'image/svg+xml',
+        'tif'  => 'image/tiff',
+        'tiff' => 'image/tiff',
 
-            // images
-            'png' => 'image/png',
-            'jpe' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'jpg' => 'image/jpeg',
-            'gif' => 'image/gif',
-            'bmp' => 'image/bmp',
-            'ico' => 'image/vnd.microsoft.icon',
-            'tiff' => 'image/tiff',
-            'tif' => 'image/tiff',
-            'svg' => 'image/svg+xml',
-            'svgz' => 'image/svg+xml',
+        // compactados
+        'bz'  => 'application/x-bzip' ,
+        'bz2' => 'application/x-bzip2',
+        'gz'  => 'application/x-gzip',
+        'rar' => 'application/x-rar-compressed',
+        'tar' => 'application/x-tar',
+        'zip' => 'application/zip',
 
-            // archives
-            'zip' => 'application/zip',
-            'rar' => 'application/x-rar-compressed',
-            'exe' => 'application/x-msdownload',
-            'msi' => 'application/x-msdownload',
-            'cab' => 'application/vnd.ms-cab-compressed',
+        // audio
+        'mp3' => 'audio/mpeg',
+        'wav' => 'audio/x-wav',
+        
+        //video
+        'avi' => 'video/x-msvideo', 
+        'cab' => 'application/vnd.ms-cab-compressed',
+        'flv' => 'video/x-flv',
+        'mov' => 'video/quicktime',
+        'mpeg'=> 'video/mpeg',
+        'mpg' => 'video/mpeg', 
+        'qt'  => 'video/quicktime',
 
-            // audio/video
-            'mp3' => 'audio/mpeg',
-            'qt' => 'video/quicktime',
-            'mov' => 'video/quicktime',
+        // adobe
+        'ai'  => 'application/postscript',
+        'eps' => 'application/postscript',
+        'pdf' => 'application/pdf',
+        'ps'  => 'application/postscript',
+        'psd' => 'image/vnd.adobe.photoshop',
 
-            // adobe
-            'pdf' => 'application/pdf',
-            'psd' => 'image/vnd.adobe.photoshop',
-            'ai' => 'application/postscript',
-            'eps' => 'application/postscript',
-            'ps' => 'application/postscript',
+        //executaveis
+        'exe' => 'application/x-msdownload',
+        'msi' => 'application/x-msdownload',
+        
+        // ms office
+        'doc' => 'application/msword',
+        'ppt' => 'application/vnd.ms-powerpoint',
+        'rtf' => 'application/rtf',
+        'xls' => 'application/vnd.ms-excel',
 
-            // ms office
-            'doc' => 'application/msword',
-            'rtf' => 'application/rtf',
-            'xls' => 'application/vnd.ms-excel',
-            'ppt' => 'application/vnd.ms-powerpoint',
-
-            // open office
-            'odt' => 'application/vnd.oasis.opendocument.text',
-            'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
-         );
-     }
+        // open office
+        'ods' => 'application/vnd.oasis.opendocument.spreadsheet',
+        'odt' => 'application/vnd.oasis.opendocument.text',
+    );
     
     
 }
