@@ -55,8 +55,8 @@ class fileResource extends \classes\Interfaces\resource{
         getTrueDir($dir);
         getTrueDir($filename);
         if(!is_dir($dir) && !$this->createDir($dir)) {return false;}
-        if(!is_writable($filename)){
-            $this->setErrorMessage("Não é possível criar o arquivo ($filename) pois o diretório não possui permissão de escrita");
+        if(!is_writable($dir)){
+            $this->setErrorMessage("Não é possível criar o arquivo ($filename) pois o diretório ($dir) não possui permissão de escrita");
             return false;
         }
         if(file_put_contents($filename, $conteudo) === false){

@@ -84,4 +84,14 @@ class encodeResource extends \classes\Interfaces\resource{
     static function from_file($filename, $default_encoding = 'UTF-8')  { 
         return self::from_string(@file_get_contents($filename), $default_encoding); 
     } 
+    
+    
+    static function tryConvert($string, $default_encoding = 'UTF-8'){
+        $array = self::from_string($string, $default_encoding); 
+        if(empty($array)){return false;}
+        foreach($array as $encode){
+            $sample = @iconv($encode, $default_encoding, $string); 
+            echo "($encode)<br/>$sample<hr/>";
+        }
+    }
 } 
