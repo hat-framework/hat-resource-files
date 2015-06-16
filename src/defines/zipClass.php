@@ -20,7 +20,7 @@ class zipClass extends \classes\Interfaces\resource{
         $status = $this->zip->open($zip, $mode);
         $this->zipFileName = $zip;
         if($status === TRUE){return true;}
-        $this->setErrorMessage("Erro ao abrir o arquivo $zip <br/>Motivo: " .$this->ZipStatusString($status));
+        $this->setErrorMessage("Erro ao abrir o arquivo zip ($zip): " .$this->ZipStatusString($status));
         return false;
     }
     
@@ -80,7 +80,7 @@ class zipClass extends \classes\Interfaces\resource{
             case ZipArchive::ER_SEEK         : return 'Erro na busca';
             case ZipArchive::ER_READ         : return 'Erro na leitura';
             case ZipArchive::ER_WRITE        : return 'Erro na escrita';
-            case ZipArchive::ER_CRC          : return 'Erro de CRC';
+            case ZipArchive::ER_CRC          : return 'Erro no checksum';
             case ZipArchive::ER_ZIPCLOSED    : return 'O arquivo zip foi fechado';
             case ZipArchive::ER_NOENT        : return 'Arquivo não existe';
             case ZipArchive::ER_EXISTS       : return 'Arquivo já existe';

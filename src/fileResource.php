@@ -44,10 +44,9 @@ class fileResource extends \classes\Interfaces\resource{
         if(!file_exists($fileName)){return true;}
         $last = error_get_last();
         if(!is_readable($fileName)){
-             $this->setErrorMessage("Arquivo $fileName não pode ser lido (e nem apagado) - {$last['message']}");
+            return $this->setErrorMessage("Arquivo $fileName não pode ser lido (e nem apagado) - {$last['message']}");
         }
-        else {$this->setErrorMessage("Erro ao apagar Arquivo $fileName - {$last['message']}");}
-        return false;
+        return $this->setErrorMessage("Erro ao apagar Arquivo $fileName - {$last['message']}");
     }
     
     public function savefile($filename, $conteudo, $chmod = 0755){
@@ -56,15 +55,21 @@ class fileResource extends \classes\Interfaces\resource{
         getTrueDir($filename);
         if(!is_dir($dir) && !$this->createDir($dir)) {return false;}
         if(!is_writable($dir)){
-            $this->setErrorMessage("Não é possível criar o arquivo ($filename) pois o diretório ($dir) não possui permissão de escrita");
-            return false;
+            $e        = explode(DS, $filename);
+            $filename = end($e);
+            return $this->setErrorMessage("Não é possível criar o arquivo ($filename) pois o diretório ($dir) não possui permissão de escrita");
         }
+        
         if(file_put_contents($filename, $conteudo) === false){
-            $this->setErrorMessage("Não foi possível criar o arquivo ($filename) ");
-            return false;
+            $e        = explode(DS, $filename);
+            $filename = end($e);
+            return $this->setErrorMessage("Não foi possível salvar o centeúdo no arquivo ($filename) ");
         }
+        
         if(@chmod($filename, $chmod) === FALSE){
-            $this->setAlertMessage("Não foi possível dar a permissão $chmod para o arquivo!");
+            $e        = explode(DS, $filename);
+            $filename = end($e);
+            $this->setAlertMessage("Não foi possível dar a permissão $chmod para o arquivo ($filename)");
             return true;
         }
         $this->setSuccessMessage("Arquivo salvo corretamente!");

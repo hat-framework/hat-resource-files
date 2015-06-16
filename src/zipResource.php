@@ -97,4 +97,11 @@ class zipResource extends zipClass{
         readfile("$filename");
         return true;
     }
+    
+    public function checkZipFile($file){
+        $b1 = $this->openzip($file, ZipArchive::CHECKCONS);
+        if(false === $b1){return false;}
+        $b2 = $this->closezip();
+        return $b1 & $b2;
+    }
 }
