@@ -254,18 +254,35 @@ class dirResource extends \classes\Interfaces\resource{
             return $this->arquivos;
         }
         
-        public function getDirectoryTree(&$tree, $diretorio = ""){
+        public function getDirectoryTree(&$tree, $diretorio = ""){           
             $files   = $this->getArquivos($diretorio);
             foreach($files as $f){
                 $tree[] = $f;
             }
-
             $folders = $this->getPastas();
             foreach($folders as $foldr){
                 if(!isset($tree[$foldr])){
                     $tree[$foldr] = array();
                 }
                 $this->getDirectoryTree($tree[$foldr], $diretorio.DS.$foldr);
+            }
+        }
+        
+        public function getDirectoryTreeFolders(&$tree, $current_folder = '', $diretorio = ""){
+            getTrueDir($diretorio);
+            if($current_folder !== '' && $current_folder == $diretorio){
+                $files   = $this->getArquivos($diretorio);
+                foreach($files as $f){
+                    $tree[] = $f;
+                }
+            }
+            
+            $folders = $this->getPastas($diretorio);
+            foreach($folders as $foldr){
+                if(!isset($tree[$foldr])){
+                    $tree[$foldr] = array();
+                }
+                $this->getDirectoryTreeFolders($tree[$foldr], $current_folder, $diretorio.DS.$foldr);
             }
         }
         
