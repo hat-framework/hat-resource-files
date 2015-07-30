@@ -38,11 +38,11 @@ class unzipResource extends zipClass{
         return ($done > 0);
     }
     
-    public function extractFile($arquivo, $dir = ""){
+    public function extractFile($arquivo, $dropfile = true){
         getTrueDir($arquivo);
         if(!$this->openzip($arquivo)){return false;}
         $bool = $this->extract($arquivo);
-        $this->closezip(true);
+        $this->closezip($dropfile);
         if($bool){
             $localpasta = $this->getLocalPasta($arquivo);
             return $this->unzipFolder($localpasta);
@@ -50,31 +50,31 @@ class unzipResource extends zipClass{
         return $bool;
     }
 
-    private function extract($arquivo){
-        $localpasta = $this->getLocalPasta($arquivo);
-        if (file_exists($localpasta)) { return true;}
-        if(!$this->dobj->create($localpasta, '')){
-            $this->setMessages($this->dobj->getMessages());
-            return false;
-        }
-        $status = $this->zip->extractTo($localpasta);
-        if($status === true){return true;}
-        $this->setErrorMessage($this->ZipStatusString($status));
-        return false;
-    }
+            private function extract($arquivo){
+                $localpasta = $this->getLocalPasta($arquivo);
+                if (file_exists($localpasta)) { return true;}
+                if(!$this->dobj->create($localpasta, '')){
+                    $this->setMessages($this->dobj->getMessages());
+                    return false;
+                }
+                $status = $this->zip->extractTo($localpasta);
+                if($status === true){return true;}
+                $this->setErrorMessage($this->ZipStatusString($status));
+                return false;
+            }
     
-    private function getLocalPasta($arquivo){
-        if($this->diretorio !== ""){
-            $e = explode(DS, $arquivo);
-            $nomearquivo = end($e);
-            $pasta       = explode(".", $nomearquivo);
-            $localpasta      = $this->diretorio.DS.$pasta[0];
-        }else{
-            $e               = explode(".", $arquivo);
-            $localpasta      = $e[0];
-        }
-        getTrueDir($localpasta);
-        return $localpasta;
-    }
+            private function getLocalPasta($arquivo){
+                if($this->diretorio !== ""){
+                    $e = explode(DS, $arquivo);
+                    $nomearquivo = end($e);
+                    $pasta       = explode(".", $nomearquivo);
+                    $localpasta      = $this->diretorio.DS.$pasta[0];
+                }else{
+                    $e               = explode(".", $arquivo);
+                    $localpasta      = $e[0];
+                }
+                getTrueDir($localpasta);
+                return $localpasta;
+            }
 
 }
