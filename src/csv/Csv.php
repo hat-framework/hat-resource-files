@@ -17,97 +17,174 @@ class Csv extends classes\Classes\Object{
     * CSV separator 
     * @type string 
     */ 
-    protected $separator; 
+    protected $separator = ';'; 
 
     /** 
     * CSV file resource link 
     * @type resource 
     */ 
     protected $csvH; 
+    private $sum   = array();
+    private $array = array();
 
 
-    public function __construct($filename, $separator = ";", $colum_key = "", $hasHeader = true){ 
-        if (!is_string($filename)) { 
-            throw new Exception("Illegal parameter filename. Must be string."); 
-        } 
-        if (!is_string($separator)) { 
-            throw new Exception("Illegal parameter separator. Must be string."); 
-        }
-        $this->key       = $colum_key;
-        $this->filename  = $filename; 
-        $this->separator = $separator; 
-        $this->open();
-        $this->csv2array($hasHeader);
-    } 
-
+    public function __construct(){ 
+        
+    }
+    
     public function __destruct(){ 
         if (is_resource($this->csvH)) { 
             fclose($this->csvH); 
         } 
     } 
-
-    /** 
-    * open file defined with filename 
-    * @return void 
-    */ 
-    protected function open(){ 
-        if (is_resource($this->csvH)) { 
-            return true; 
-        } 
-        if (!strlen($this->filename)) { 
-            throw new Exception("There is no filename parameter."); 
-        } 
-        
-        if(!$fc = iconv('windows-1250', 'utf-8', file_get_contents($this->filename))){
-            throw new Exception("Cannot find/open '". $this->filename ."'."); 
-        }
-        $handle=fopen("php://memory", "rw"); 
-        fwrite($handle, $fc); 
-        fseek($handle, 0); 
-        $this->csvH = $handle;
-        return true; 
-    } 
     
-    private $sum   = array();
-    private $array = array();
-    private function csv2array($hasHeader = true){
-        if(!empty($this->array)) return $this->array;
-        $conteudo = array();
-        while ($data = fgetcsv ($this->csvH, 1000, $this->separator)) {
-            if(empty($this->header) && $hasHeader) {
-                $this->header = $data;
-                continue;
-            }
-            $blacklist = array();
-            if(count($this->header) != count($data)){
-                $c1 = count($this->header);
-                $c2 = count($data);
-                print_r($data);
-                //print_r( $data);
-                print_r($this->header);
-                die("A quantidade de colunas das linhas de $this->filename não é igual:
-                     Header: $c1, Line: $c2");
-            }
-            $var = array_combine($this->header, $data);
-            foreach($var as $nm => $val){
-                if(array_key_exists($nm, $blacklist)) continue;
-                if(!is_numeric($val)) {
-                    $blacklist[$nm] = $nm;
-                    if(isset($this->sum[$nm])) unset($this->sum[$nm]);
-                    continue;
-                }
-                
-                if(!isset($this->sum[$nm])) $this->sum[$nm] = 0;
-                $this->sum[$nm] += $val;
-            }
-            
-            if($this->key != "" && array_key_exists($this->key, $var))
-                 $conteudo[$var[$this->key]] = $var;
-            else $conteudo[] = $var;
-        }
-        $this->array = $conteudo;
-        return $conteudo;  
+    public function setSeparator($separator){
+        $this->separator = $separator;
+        return $this;
     }
+    
+    private $key = "";
+    public function setColumKey($colkey){
+        $this->key = $colkey;
+        return $this;
+    }
+    
+    private $hasHeader = true;
+    public function setHeader($header){
+        $this->hasHeader = $header;
+        return $this;
+    }
+    
+    private $reversed = true;
+    public function setReversed($reversed){
+        $this->reversed = $reversed;
+        return $this;
+    }
+
+    public function execute($filename){
+        if (!is_string($filename)) { 
+            throw new Exception("Illegal parameter filename. Must be string."); 
+        } 
+        if (!is_string($this->separator)) { 
+            throw new Exception("Illegal parameter separator. Must be string."); 
+        }
+        $this->filename  = $filename;
+        $this->open();
+        return $this->csv2array();
+    }
+
+            /** 
+            * open file defined with filename 
+            * @return void 
+            */ 
+            protected function open(){ 
+                if (is_resource($this->csvH)) { 
+                    return true; 
+                } 
+                if (!strlen($this->filename)) { 
+                    throw new Exception("There is no filename parameter."); 
+                } 
+
+                if(!$fc = iconv('windows-1250', 'utf-8', file_get_contents($this->filename))){
+                    throw new Exception("Cannot find/open '". $this->filename ."'."); 
+                }
+                $handle=fopen("php://memory", "rw"); 
+                fwrite($handle, $fc); 
+                fseek($handle, 0); 
+                $this->csvH = $handle;
+                return true; 
+            } 
+            
+            
+    
+            private function csv2array(){
+                $this->array     = array();
+                if($this->reversed){return $this->csv2arrayReversed();}
+                while ($data = fgetcsv ($this->csvH, 1000, $this->separator)) {
+                    $this->processLine($data, $this->array);
+                }
+                return $this->array;
+            }
+
+                    private function processLine($line, &$response){
+                        if(false === $this->detectHeader($line)){return false;}
+                        if(false === $this->checkLines($line)){return false;}
+
+                        $blacklist = array();
+                        $var       = array_combine($this->header, $line);
+                        $this->doSum($var, $blacklist);
+                        $this->addLine($var, $response);
+                        return true;
+                    }
+
+                            private function detectHeader($data){
+                                if(!empty($this->header)) {return true;}
+                                $this->header = ($this->hasHeader)?$data:array_keys($data);
+                                return (!$this->hasHeader);
+                            }
+
+                            private function checkLines($data){
+                                if(count($this->header) == count($data)){return true;}
+                                $c1 = count($this->header);
+                                $c2 = count($data);
+                                print_r($data);
+                                //print_r( $data);
+                                print_r($this->header);
+                                die("A quantidade de colunas das linhas de $this->filename não é igual:
+                                     Header: $c1, Line: $c2");
+
+                            }
+
+                            private function doSum($var, &$blacklist){
+                                foreach($var as $nm => $val){
+                                    if(array_key_exists($nm, $blacklist)) {continue;}
+                                    if(!is_numeric($val)) {
+                                        $blacklist[$nm] = $nm;
+                                        safeUnset($nm, $this->sum);
+                                        continue;
+                                    }
+
+                                    if(!isset($this->sum[$nm])){$this->sum[$nm] = 0;}
+                                    $this->sum[$nm] += $val;
+                                }
+                            }
+
+                            private function addLine($var, &$conteudo){
+                                if($this->key != "" && array_key_exists($this->key, $var)){
+                                    $conteudo[$var[$this->key]] = $var;
+                                }else {$conteudo[] = $var;}
+                            }
+            
+            private function csv2arrayReversed(){
+                $data = $this->prepareData();
+                foreach($data as $line){
+                    $this->processLine($line, $this->array);
+                }
+                return $this->array;
+            }
+
+                    private function prepareData(){
+                        $i            = 0;
+                        $this->data   = array();
+                        $this->header = array();
+                        while ($data = fgetcsv ($this->csvH, 1000, $this->separator)) {
+                            $this->header[] = ($this->hasHeader)?$data[0]:$i++;
+                            $this->prepareLine($data);
+                        }
+                        $out = $this->data;
+                        $this->data = array();
+                        return $out;
+                    }
+
+                            private function prepareLine($data){
+                                foreach($data as $j => $val){
+                                    if($j == 0){continue;}
+                                    if(!isset($this->data[$j-1])){$this->data[$j-1] = array();}
+                                    $this->data[$j-1][] = $val;
+                                }
+                            }
+
+    
     
     public function getSum($coluna){
         return isset($this->sum[$coluna])?$this->sum[$coluna]:0;
