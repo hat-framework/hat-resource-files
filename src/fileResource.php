@@ -322,7 +322,9 @@ class fileResource extends \classes\Interfaces\resource{
                 finfo_close($finfo);
                 if ($type !== false && strlen($type) > 0) {return $type;}
         }
-        
+        if(!function_exists("mime_content_type")){
+            require_once __DIR__. '/defines/mime_content_type.php';
+        }
         $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
         $type = isset(self::$extensions[$ext]) ? self::$extensions[$ext] : trim(mime_content_type($file));
 
