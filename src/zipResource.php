@@ -11,6 +11,40 @@ require_once dirname(__FILE__). '/defines/zipClass.php';
 class zipResource extends zipClass{
     
     private $err = array();
+    public function donwloadZipFiles($zipname, $files, $download = true, $dropZip = false){
+        if(!is_array($files) || empty($files)){return true;}
+        getTrueDir($zipname);
+        $zipfile = "$zipname.zip";
+        $f       = explode(DS, $zipname);
+        array_pop($f);
+        $folder = implode(DS, $f);
+        $this->LoadResource('files/dir', 'dobj')->create($folder, '');
+        if(!$this->openzip($zipfile, ZIPARCHIVE::CREATE)){return false;}
+        $bool = true;
+        foreach($files as $file){
+            if(trim($file) === ""){continue;}
+            getTrueDir($file);
+            $e = explode(DS, $file);
+            if($this->zip->addFile($file, end($e)) === false){
+                $this->setErrorMessage("Erro ao compactar arquivo $file");
+                $bool   = false;
+                break;
+            }
+        }
+        $this->closezip();
+        if(!$bool){
+            $this->LoadResource('files/dir', 'dobj')->removeFile($zipfile);
+            return false;
+        }
+        
+        if($download){
+            if(false === $this->getFile($zipfile)){return false;}
+            if(!$dropZip){return true;}
+            return $this->LoadResource('files/file', 'fobj')->dropFile($zipfile);
+        }
+        return true;
+    }
+    
     public function compactar($diretorio){
         $this->LoadResource('files/dir', 'dobj');
         $zipfile = "$diretorio.zip";

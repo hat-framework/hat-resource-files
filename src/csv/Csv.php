@@ -84,9 +84,11 @@ class Csv extends classes\Classes\Object{
                 if (!strlen($this->filename)) { 
                     throw new Exception("There is no filename parameter."); 
                 } 
-
-                if(!$fc = iconv('windows-1250', 'utf-8', file_get_contents($this->filename))){
-                    throw new Exception("Cannot find/open '". $this->filename ."'."); 
+                
+                $str = file_get_contents($this->filename);
+                if(!$fc = @iconv('windows-1250', 'utf-8', $str)){
+                    if($str == ""){throw new Exception("Cannot find/open '". $this->filename ."'."); }
+                    $fc = $str;
                 }
                 $handle=fopen("php://memory", "rw"); 
                 fwrite($handle, $fc); 
