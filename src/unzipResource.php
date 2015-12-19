@@ -18,9 +18,11 @@ class unzipResource extends zipClass{
         $this->LoadResource('files/file', 'fobj');
     }
     
-    private function setDiretorio($diretorio){
-        $diretorio .= DS;
-        getTrueDir($diretorio);
+    public function setDiretorio($diretorio){
+        if($diretorio !== ""){
+            $diretorio .= DS;
+            getTrueDir($diretorio);
+        }
         $this->diretorio = $diretorio;
     }
     
