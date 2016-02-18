@@ -58,4 +58,49 @@ class csvResource extends \classes\Interfaces\resource{
         return $obj;
     }
     
+    public function exportCSV($rows){
+        $headings = array_keys(end($rows));
+        # Ensure that we have data to be able to export the CSV
+        if ((empty($headings)) AND (empty($rows))){return;}
+        # modify the name somewhat
+        $name = "export.csv";
+
+        # Set the headers we need for this to work
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=' . $name);
+
+        # Start the ouput
+        $output = fopen('php://output', 'w');
+
+        # Create the headers
+        fputcsv($output, $headings);
+
+        # Then loop through the rows
+        foreach($rows as $row)
+        {
+            # Add the rows to the body
+            fputcsv($output, $row);
+        }
+
+        # Exit to close the stream off
+        exit();
+    }
+    
+    public function array2csv($array, $filename = ""){
+       if (count($array) == 0) {
+         return false;
+       }
+       ob_start();
+       $df = fopen("php://output", 'w');
+       fputcsv($df, array_keys(reset($array)));
+       foreach ($array as $row) {
+          fputcsv($df, $row);
+       }
+       fclose($df);
+       $result = ob_get_clean();
+       if($filename == ""){$this->download_send_headers($filename, $result);}
+       return $result;
+    }
+    
+    
 }

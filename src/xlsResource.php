@@ -69,32 +69,69 @@ class xlsResource extends \classes\Interfaces\resource{
      * @return boolean
      */
     public function saveXlsx($model, $filename) {
-        $this->LoadModel($model, 'md');
-        $data = $this->md->getDados();
-        $col = ($this->columns == array())?true:false;
-        $tit = ($this->titles == array())?true:false;
-            foreach ($data as $name => $dt) {
-                if (isset($dt['private']) || !isset($dt['display']))
-                    continue;
-                if($col)$this->columns[] = $name;
-                if($tit)$this->titles[] = $dt['name'];
-            }
-        $arr = $this->md->selecionar($this->columns, $this->where);
-        if($arr == false || empty($arr))return false;
-        $fn = $this->callBack;
-        foreach ($arr as $var) {
-            if (is_callable($fn)) {$var = $fn($var);}
-            $out[] = array_values($var);
-        }
-        array_unshift($out, $this->titles);
-        if (file_exists($filename))
-            unlink($filename);
-        require_once 'xls/xlsxwriter/xlsxwriter.class.php';
-        $writer = new XLSXWriter();
-        $writer->writeSheet($out);
-        $writer->writeToFile($filename . '.xlsx');
+        $this->_initializeModelData($model);
+        $out = $this->_getDataFromModel();
+        if($out === false){return false;}
+        $this->array2Xls($filename, $out);
         return true;
     }
+    
+            private function _initializeModelData($model){
+                $data = $this->LoadModel($model, 'md')->getDados();
+                $col = ($this->columns == array())?true:false;
+                $tit = ($this->titles == array())?true:false;
+                foreach ($data as $name => $dt) {
+                    if (isset($dt['private']) || !isset($dt['display'])){continue;}
+                    if($col){$this->columns[] = $name;}
+                    if($tit){$this->titles[] = $dt['name'];}
+                }
+            }
+    
+            private function _getDataFromModel(){
+                $arr = $this->md->selecionar($this->columns, $this->where);
+                if($arr == false || empty($arr)){return false;}
+                return $arr;
+            }
+    
+    public function array2Xls($filename, $array, $download = false){
+        $out = $this->_getArray($array);
+        if(false === $this->_save2Xls($filename, $out)){return false;}
+        if($download){$this->download($filename);}
+    }
+    
+            private function _getArray($array){
+                $temp = end($array);
+                $keys = array_keys($temp);
+                $fn   = $this->callBack;
+                $out  = array();
+                foreach ($array as $var) {
+                    if (is_callable($fn)) {$var = $fn($var);}
+                    $out[] = array_values($var);
+                }
+                array_unshift($out, $keys);
+                return $out;
+            }
+    
+            private function _save2Xls($filename, $data){
+                if(file_exists($filename. '.xlsx')){unlink($filename. '.xlsx');}
+                if(false === $this->createDirIfNotExists($filename)){return false;}
+                require_once __DIR__. '/xls/xlsxwriter/xlsxwriter.class.php';
+                $writer = new XLSXWriter(); 
+                $writer->writeSheet($data);
+                $writer->writeToFile($filename . '.xlsx');
+                return true;
+            }
+            
+                    private function createDirIfNotExists($filename){
+                        getTrueDir($filename);
+                        $e = explode(DS, $filename);
+                        array_shift($e);
+                        $dir = implode(DS, $e);
+                        if(false == $this->LoadResource('files/dir', 'dobj')->create($dir, '')){
+                            return $this->setErrorMessage($this->dobj->getErrorMessage());
+                        }
+                        return true;
+                    }
     
     /**
      * Donwnload arquivo excel formato .xlsx . 
@@ -111,13 +148,17 @@ class xlsResource extends \classes\Interfaces\resource{
      */
     public function downloadXlsx($model, $filename) {
         $status = $this->saveXlsx($model, $filename);
-        if(!$status)return false;
-        header('Content-Disposition: attachment; filename='.basename($filename).'.xlsx');
-        header("Content-Type: application/vnd.ms-excel");
-        header("Content-Length: ".filesize($filename.'.xlsx'));
-        readfile($filename.'.xlsx');
-        unlink($filename.'.xlsx');
+        if(!$status){return false;}
+        $this->download($filename);
     }
+    
+            private function download($filename){
+                header('Content-Disposition: attachment; filename='.basename($filename).'.xlsx');
+                header("Content-Type: application/vnd.ms-excel");
+                header("Content-Length: ".filesize($filename.'.xlsx'));
+                readfile($filename.'.xlsx');
+                unlink($filename.'.xlsx');
+            }
     
     public function setTitles($titles){
         $this->titles = $titles;
